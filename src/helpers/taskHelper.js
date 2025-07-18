@@ -16,8 +16,10 @@ const createTask = async request => {
         id: true,
       },
     })
+
     if (CommonHelper.isEmpty(project))
       return Promise.resolve(Boom.notFound('Project Notfound'))
+
     const tasksToCreate = tasks.map(task => ({
       title: task.title,
       description: task.description,
@@ -33,7 +35,7 @@ const createTask = async request => {
 
     return {}
   } catch (err) {
-    CommonHelper.log(['Project Helper', 'Create Project', 'ERROR'], {
+    CommonHelper.log(['Task Helper', 'Create Task', 'ERROR'], {
       transactionid,
       info: `${err}`,
     })
@@ -45,6 +47,34 @@ const createTask = async request => {
   }
 }
 
+const updateTask = async request => {
+  const { transactionid } = request.headers
+  try {
+    const { projectId, taskId, status } = request.body
+    const existingTask = await prisma.task.findFirst({
+      where: { id: taskId, projectId },
+    })
+    if (!existingTask) {
+      return Promise.resolve(Boom.notFound('Task not found'))
+    }
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status,
+      },
+    })
+    return updatedTask
+  } catch (err) {
+    CommonHelper.log(['Task Helper', 'Update Task', 'ERROR'], {
+      transactionid,
+      info: `${err}`,
+    })
+
+    return Promise.reject(err)
+  }
+}
+
 module.exports = {
   createTask,
+  updateTask,
 }

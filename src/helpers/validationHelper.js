@@ -203,6 +203,28 @@ const GetProjectDetailValiation = request => {
   return null
 }
 
+const UpdateTaskValiation = reqBody => {
+  const schema = Joi.object({
+    projectId: uuidSchema,
+    taskId: uuidSchema,
+    status: Joi.string()
+      .valid('todo', 'in-progress', 'done')
+      .default('todo')
+      .messages({
+        'any.only': 'Status must be one of: todo, in-progress, done',
+      }),
+  })
+  const { error } = schema.validate(reqBody, {
+    abortEarly: false,
+  })
+
+  if (error) {
+    return error.details.map(err => err.message).join(', ')
+  }
+
+  return null
+}
+
 module.exports = {
   RegisterValiation,
   LoginValiation,
@@ -210,4 +232,5 @@ module.exports = {
   CreateTaskValiation,
   GetProjectsValiation,
   GetProjectDetailValiation,
+  UpdateTaskValiation,
 }

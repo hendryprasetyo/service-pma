@@ -34,7 +34,6 @@ const login = async (request, reply) => {
       secure: process.env.NODE_ENV === 'production',
       maxAge: +process.env.MAX_AGE_COOKIE_AUTH,
       sameSite: process.env.COOKIE_AUTH_SAME_SITE,
-      domain: request.hostname,
       path: '/',
     })
     return { access_token: accessToken }
@@ -58,7 +57,6 @@ const logout = async (request, reply) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.COOKIE_AUTH_SAME_SITE,
-        domain: request.hostname,
         path: '/',
       })
     }

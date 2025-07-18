@@ -11,7 +11,11 @@ require('dotenv').config()
 
 const PORT = process.env.PORT
 const app = express()
-const whitelist = ['http://localhost:3000', 'http://127.1.1.0:3000']
+const whitelist = [
+  'http://localhost:3000',
+  'http://127.1.1.0:3000',
+  process.env.CLIENT_BASE_URL,
+]
 
 app.use(
   cors({
