@@ -57,6 +57,20 @@ const getProjectDetailById = async request => {
     const userId = request.auth?.id
     const { id } = request.params
     const { status } = request.query
+
+    const isMember = await prisma.membership.findFirst({
+      where: {
+        userId,
+        projectId: id,
+      },
+    })
+
+    if (!isMember) {
+      return Promise.resolve(
+        Boom.badRequest('You are not authorized to access this project')
+      )
+    }
+
     const project = await prisma.project.findUnique({
       where: { id },
       select: {
