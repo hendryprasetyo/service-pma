@@ -127,6 +127,26 @@ const CreateProjectValiation = reqBody => {
   return null
 }
 
+const UpdateProjectValiation = reqBody => {
+  const schema = Joi.object({
+    projectId: uuidSchema,
+    title: Joi.string().pattern(noBoundarySpace).optional().allow('').messages({
+      'string.base': 'title must be a string',
+      'string.pattern.base': 'title cannot start or end with space',
+    }),
+    newMembers: Joi.array().items(uuidSchema).optional(),
+  }).required()
+  const { error } = schema.validate(reqBody, {
+    abortEarly: false,
+  })
+
+  if (error) {
+    return error.details.map(err => err.message).join(', ')
+  }
+
+  return null
+}
+
 const CreateTaskValiation = reqBody => {
   const schema = Joi.object({
     projectId: uuidSchema,
@@ -233,4 +253,5 @@ module.exports = {
   GetProjectsValiation,
   GetProjectDetailValiation,
   UpdateTaskValiation,
+  UpdateProjectValiation,
 }

@@ -54,6 +54,7 @@ const getAllProject = async request => {
 const getProjectDetailById = async request => {
   const { transactionid } = request.headers
   try {
+    const userId = request.auth?.id
     const { id } = request.params
     const { status } = request.query
     const project = await prisma.project.findUnique({
@@ -95,7 +96,15 @@ const getProjectDetailById = async request => {
     if (CommonHelper.isEmpty(project))
       return Promise.resolve(Boom.notFound('Project notfound'))
 
-    return project
+    const membershipsWithFlag = project.memberships.map(m => ({
+      ...m.user,
+      isOwner: m.user.id === userId,
+    }))
+
+    return {
+      ...project,
+      memberships: membershipsWithFlag,
+    }
   } catch (err) {
     CommonHelper.log(['Project Helper', 'Get Project By Id', 'ERROR'], {
       transactionid,
@@ -154,8 +163,61 @@ const createProject = async request => {
   }
 }
 
+const updateProject = async request => {
+  const { transactionid } = request.headers
+  try {
+    const userId = request.auth?.id
+    const { projectId, title, newMembers = [] } = request.body
+
+    // 1. Cek apakah user adalah owner project
+    const project = await prisma.project.findUnique({
+      where: { id: projectId, ownerId: userId },
+      include: { memberships: true },
+    })
+
+    if (!project) return Promise.resolve(Boom.notFound('Project not found'))
+
+    await prisma.$transaction(async tx => {
+      // 3. Update nama project kalau ada
+      if (!CommonHelper.isEmpty(title)) {
+        await tx.project.update({
+          where: { id: projectId },
+          data: { name: title },
+        })
+      }
+
+      // 4. Tambahkan member baru
+      if (newMembers.length > 0) {
+        // ambil id user yang sudah jadi member
+        const existingMemberIds = project.memberships.map(m => m.userId)
+        const toAdd = newMembers.filter(id => !existingMemberIds.includes(id))
+
+        // insert baru jika ada
+        if (toAdd.length > 0) {
+          await tx.membership.createMany({
+            data: toAdd.map(userId => ({
+              userId,
+              projectId,
+            })),
+            skipDuplicates: true,
+          })
+        }
+      }
+    })
+
+    return { success: true }
+  } catch (err) {
+    CommonHelper.log(['Project Helper', 'Update Project', 'ERROR'], {
+      transactionid,
+      info: `${err}`,
+    })
+    return Promise.reject(err)
+  }
+}
+
 module.exports = {
   getAllProject,
   getProjectDetailById,
   createProject,
+  updateProject,
 }

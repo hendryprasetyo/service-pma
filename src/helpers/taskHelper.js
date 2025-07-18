@@ -50,10 +50,24 @@ const createTask = async request => {
 const updateTask = async request => {
   const { transactionid } = request.headers
   try {
+    const userId = request.auth?.id
     const { projectId, taskId, status } = request.body
-    const existingTask = await prisma.task.findFirst({
-      where: { id: taskId, projectId },
-    })
+    const [existingTask, isMember] = await Promise.all([
+      prisma.task.findFirst({
+        where: { id: taskId, projectId },
+      }),
+      prisma.membership.findFirst({
+        where: {
+          userId,
+          projectId,
+        },
+      }),
+    ])
+    if (!isMember) {
+      return Promise.resolve(
+        Boom.badRequest('You are not a member of this project')
+      )
+    }
     if (!existingTask) {
       return Promise.resolve(Boom.notFound('Task not found'))
     }
