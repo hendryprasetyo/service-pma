@@ -245,9 +245,9 @@ const UpdateTaskValiation = reqBody => {
   return null
 }
 
-const GetMembersValiation = request => {
+const IdentifierValidation = request => {
   const schema = Joi.object({
-    projectId: uuidSchema,
+    id: uuidSchema,
   })
   const { error } = schema.validate(request, {
     abortEarly: false,
@@ -268,5 +268,5 @@ module.exports = {
   GetProjectDetailValiation,
   UpdateTaskValiation,
   UpdateProjectValiation,
-  GetMembersValiation,
+  IdentifierValidation,
 }

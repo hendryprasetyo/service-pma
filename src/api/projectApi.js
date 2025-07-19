@@ -79,8 +79,8 @@ const updateProject = async (request, reply) => {
 
 const getMembersByProjectId = async (request, reply) => {
   const { transactionid } = request.headers
-  const validate = ValidationHelper.GetMembersValiation({
-    projectId: request.params.id,
+  const validate = ValidationHelper.IdentifierValidation({
+    id: request.params.id,
   })
   if (validate) return reply.send(Boom.badRequest(validate))
   try {
@@ -96,9 +96,29 @@ const getMembersByProjectId = async (request, reply) => {
   }
 }
 
+const deleteProject = async (request, reply) => {
+  const { transactionid } = request.headers
+  const validate = ValidationHelper.IdentifierValidation({
+    id: request.params.id,
+  })
+  if (validate) return reply.send(Boom.badRequest(validate))
+  try {
+    const response = await projectHelper.deleteProject(request)
+    return reply.send(response)
+  } catch (err) {
+    CommonHelper.log(['Project Controller', 'Delete Project', 'ERROR'], {
+      transactionid,
+      info: `${err}`,
+    })
+
+    return reply.send(Boom.badImplementation())
+  }
+}
+
 Router.get('/', AuthGuard, getAllProject)
-Router.get('/members/:id', AuthGuard, getMembersByProjectId)
+Router.delete('/:id', AuthGuard, deleteProject)
 Router.get('/:id', AuthGuard, getProjectDetail)
+Router.get('/members/:id', AuthGuard, getMembersByProjectId)
 Router.post('/', AuthGuard, createProject)
 Router.put('/', AuthGuard, updateProject)
 module.exports = Router

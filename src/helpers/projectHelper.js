@@ -268,9 +268,50 @@ const getMembersByProjectId = async request => {
     if (CommonHelper.isEmpty(project))
       return Promise.resolve(Boom.notFound('Members notfound'))
 
-    return project.map.memberships
+    const constructResult = project.memberships.map(el => {
+      return {
+        ...el.user,
+      }
+    })
+    return constructResult
   } catch (err) {
-    CommonHelper.log(['Project Helper', 'Get All Members', 'ERROR'], {
+    CommonHelper.log(['Project Helper', 'Get All Memmber', 'ERROR'], {
+      transactionid,
+      info: `${err}`,
+    })
+
+    return Promise.reject(err)
+  }
+}
+
+const deleteProject = async request => {
+  const { transactionid } = request.headers
+  try {
+    const userId = request.auth?.id
+    const { id } = request.params
+
+    const isOwner = await prisma.project.findFirst({
+      where: {
+        id,
+        ownerId: userId,
+      },
+    })
+
+    if (!isOwner) {
+      return Promise.resolve(
+        Boom.badRequest('You are not authorized to access this project')
+      )
+    }
+    
+    await Promise.all([
+      prisma.membership.deleteMany({ where: { projectId: id } }),
+      prisma.task.deleteMany({ where: { projectId: id } }),
+    ])
+
+    await prisma.project.delete({ where: { id } })
+    return {}
+  } catch (err) {
+    CommonHelper.log(['Project Helper', 'Delete Project', 'ERROR'], {
       transactionid,
       info: `${err}`,
     })
@@ -285,4 +326,5 @@ module.exports = {
   createProject,
   updateProject,
   getMembersByProjectId,
+  deleteProject,
 }
