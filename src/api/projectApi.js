@@ -76,7 +76,28 @@ const updateProject = async (request, reply) => {
   }
 }
 
+
+const getMembersByProjectId = async (request, reply) => {
+  const { transactionid } = request.headers
+  const validate = ValidationHelper.GetMembersValiation({
+    projectId: request.params.id,
+  })
+  if (validate) return reply.send(Boom.badRequest(validate))
+  try {
+    const response = await projectHelper.getMembersByProjectId(request)
+    return reply.send(response)
+  } catch (err) {
+    CommonHelper.log(['Project Controller', 'Get All Member', 'ERROR'], {
+      transactionid,
+      info: `${err}`,
+    })
+
+    return reply.send(Boom.badImplementation())
+  }
+}
+
 Router.get('/', AuthGuard, getAllProject)
+Router.get('/members/:id', AuthGuard, getMembersByProjectId)
 Router.get('/:id', AuthGuard, getProjectDetail)
 Router.post('/', AuthGuard, createProject)
 Router.put('/', AuthGuard, updateProject)

@@ -229,9 +229,60 @@ const updateProject = async request => {
   }
 }
 
+const getMembersByProjectId = async request => {
+  const { transactionid } = request.headers
+  try {
+    const userId = request.auth?.id
+    const { id } = request.params
+
+    const isMember = await prisma.membership.findFirst({
+      where: {
+        userId,
+        projectId: id,
+      },
+    })
+
+    if (!isMember) {
+      return Promise.resolve(
+        Boom.badRequest('You are not authorized to access this project')
+      )
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id },
+      select: {
+        memberships: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (CommonHelper.isEmpty(project))
+      return Promise.resolve(Boom.notFound('Members notfound'))
+
+    return project.map.memberships
+  } catch (err) {
+    CommonHelper.log(['Project Helper', 'Get All Members', 'ERROR'], {
+      transactionid,
+      info: `${err}`,
+    })
+
+    return Promise.reject(err)
+  }
+}
+
 module.exports = {
   getAllProject,
   getProjectDetailById,
   createProject,
   updateProject,
+  getMembersByProjectId,
 }
